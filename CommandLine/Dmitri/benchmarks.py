@@ -25,12 +25,12 @@ diff_expokit_ode23s = np.nan * simDataTemplateArray
 diff_expm_ode23s = np.nan * simDataTemplateArray
 
 startPt = 1 # Starting timepoint 
-numPt = 1 # Total number of timepoints
+numPt = 2 # Total number of timepoints
 
 COL_AXIS = 0
 
-for index in range(len(arrayDimensions), 0, -1):
-    N = arrayDimensions(index);
+for index in range(len(arrayDimensions) - 1, -1, -1):
+    N = int(arrayDimensions[index]);
 
     for simCntr in range(numSimulations):
         
@@ -53,7 +53,7 @@ for index in range(len(arrayDimensions), 0, -1):
         # new matrix, and subtract the latter from A:
             
         sumA = A.sum(axis = COL_AXIS)
-        diagFromSumA = diags([sumA], [0], format = "csr")
+        diagFromSumA = diags([sumA], [0], (N, N), format = "csr")
         A = A - diagFromSumA
         
         # Create a random initial probability vector, normalizing it so that
@@ -70,7 +70,7 @@ for index in range(len(arrayDimensions), 0, -1):
         timeExpm[simCntr][index] = timeit.timeit(
             stmt = """expm_multiply(A, P0, start = startPt,
             stop = startPt + numPt,
-            num = numPt, endpoint = True)""", number = 1, globals = globals())
+            num = numPt, endpoint = False)""", number = 1, globals = globals())
 
         # %% Expokit Calculation
         # m = 15;
@@ -110,11 +110,17 @@ for index in range(len(arrayDimensions), 0, -1):
     # Running times
     # figure(2)
     # subplot(2,1,1);
-    plt.loglog(arrayDimensions, np.mean(timeExpm, axis = COL_AXIS), '-s', label = 'expm')
+    meanTimeExpm = np.mean(timeExpm, axis = COL_AXIS)
+    np.savetxt('meanTimeExpm.txt', meanTimeExpm)
+    np.savetxt('arrayDimensions.txt', arrayDimensions)
+    plt.loglog(arrayDimensions, meanTimeExpm, '-s', label = 'expm')
     # loglog(arrayDimensions,mean(timeExpm),'-s',arrayDimensions,mean(timeExpokit),'-o',arrayDimensions,mean(timeODE23s),'-^');
     # legend('expm','expokit','ode23s')
     plt.xlabel('Number of states')
     plt.ylabel('Computational time')
+    for index in range(numArrayDimensions):
+        plt.annotate(
+            '%f sec for n = %d' % (meanTimeExpm[index], arrayDimensions[index]), xy=(index,index))
     plt.legend(loc = 'best')
     plt.savefig('foo.pdf')
     #set(gca,'fontsize',15)
