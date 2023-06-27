@@ -1,8 +1,11 @@
 import numpy as np
 from matplotlib import pyplot as plt
-from scipy.sparse import csr_matrix, diags
+from scipy.sparse import csr_array, diags, sparray
 from scipy.sparse.linalg import expm_multiply
 import timeit
+
+from fspErrorCondition import FSPErrorCondition
+import mexpv_modified_2
 
 def get_threshold(array1D: np.ndarray):
     sortedArray = np.sort(array1D)
@@ -10,6 +13,43 @@ def get_threshold(array1D: np.ndarray):
         return sortedArray[-1 * len(sortedArray)]
     else:
         return sortedArray[-5]
+    
+def test_mexpv(t: int, A: sparray, v: np.ndarray):
+    m = 15
+    tryAgain = True
+    Time_array = np.array([0, t])
+    #     fspTol = fspErrorCondition.fspTol;
+    #     nSinks = fspErrorCondition.nSinks;
+    
+    fspErrorCondition = FSPErrorCondition()
+    
+    while tryAgain:
+        w, err, hump, Time_array_out, P_array, P_lost, tryAgain, \
+            te, ye = mexpv_modified_2(t = t, A = A, v = P0,
+                                      tol = 1e-8, m = m,
+                                      N_prt = None,
+                                      Time_array = Time_array,
+                                      fspTol = 1e-3,
+                                      SINKS = None,
+                                      tNow = 0,
+                                      fspErrorCondition = fspErrorCondition)
+                                                
+        if not tryAgain:
+            break
+        if (m > 300):
+            print('Expokit expansion truncated at 300')
+            w, err, hump, Time_array_out, P_array, P_lost, tryAgain, \
+                te, ye = mexpv_modified_2(t = t, A = A, v = P0,
+                                          tol = 1e-8, m = m,
+                                          N_prt = None,
+                                          Time_array = Time_array,
+                                          fspTol = 1e-3,
+                                          SINKS = None,
+                                          tNow = 0,
+                                          fspErrorCondition = fspErrorCondition)
+            
+        m += 5
+    # while tryAgain ...
     
 numArrayDimensions = 6
 numSimulations = 5
@@ -47,7 +87,7 @@ for index in range(len(arrayDimensions) - 1, -1, -1):
         Athresh = np.apply_along_axis(get_threshold, COL_AXIS, A)
         Amasked = np.ma.masked_where(A < Athresh, A)
         A = Amasked.filled(fill_value = 0)
-        A = csr_matrix(A)
+        A = csr_array(A) # csr_matrix(A)
         
         # Sum all elements in each column, place these on the diagonals of a
         # new matrix, and subtract the latter from A:
@@ -60,7 +100,7 @@ for index in range(len(arrayDimensions) - 1, -1, -1):
         # its sum is one:
         
         P0 = rng.random((N, 1))
-        P0 = P0/P0.sum()
+        P0 = P0 / P0.sum()
         
         # Solve the ODE via expm_multiply and record the time required in the 
         # appropriate matrix. (We refer to the operation as "expm," but scipy
@@ -72,27 +112,13 @@ for index in range(len(arrayDimensions) - 1, -1, -1):
             stop = startPt + numPt,
             num = numPt, endpoint = False)""", number = 1, globals = globals())
 
-        # %% Expokit Calculation
-        # m = 15;
-        # tryAgain=1;
-        # %     fspTol = fspErrorCondition.fspTol;
-        # %     nSinks = fspErrorCondition.nSinks;
-        # fspErrorCondition.tInit = 0;
-        # tic
-        # while tryAgain==1
-        #     [~, ~, ~, tExport, solutionsNow, ~, tryAgain, te, PfExpokit] = ssit.fsp_ode_solvers.mexpv_modified_2(t, ...
-        #         A, P0, 1e-8, m,...
-        #         [], [0,t], 1e-3,[], 0, fspErrorCondition);
-        #     if tryAgain==0;break;end
-        #     if m>300
-        #         warning('Expokit expansion truncated at 300');
-        #         [~, ~, ~, tExport, solutionsNow, ~, tryAgain, te, PfExpokit] = mexpv_modified_2(tOut(end), jac, initSolution, fspTol/1e5, m,...
-        #             [], tOut, fspTol, [length(initSolution)-nSinks+1:length(initSolution)], tStart, fspErrorCondition);
-        #     end
-        #     m=m+5;
-        # end
-        # timeExpokit(j,index) = toc;
-
+        # Solve the ODE via a modified version of expokit and record the time 
+        # required in the appropriate matrix.
+        
+        timeExpokit[simCntr][index] = timeit.timeit(
+            stmt = "test_mexpv(t = t, A = A, v = P0)", number = 1,
+            globals = globals())
+        
         # %% ODE Calculation
         # ode_opts = odeset('Jacobian', A, 'Vectorized','on','JPattern',A~=0,'relTol',1e-8, 'absTol', 1e-10);
         # rhs = @(t,x)A*x;
@@ -111,16 +137,19 @@ for index in range(len(arrayDimensions) - 1, -1, -1):
     # figure(2)
     # subplot(2,1,1);
     meanTimeExpm = np.mean(timeExpm, axis = COL_AXIS)
+    meanTimeExpokit = np.mean(timeExpokit, axis = COL_AXIS)
     np.savetxt('meanTimeExpm.txt', meanTimeExpm)
+    np.savetxt('meanTimeExpokit.txt', meanTimeExpokit)
     np.savetxt('arrayDimensions.txt', arrayDimensions)
     plt.loglog(arrayDimensions, meanTimeExpm, '-s', label = 'expm')
+    plt.loglog(arrayDimensions, meanTimeExpm, '-o', label = 'expokit')
     # loglog(arrayDimensions,mean(timeExpm),'-s',arrayDimensions,mean(timeExpokit),'-o',arrayDimensions,mean(timeODE23s),'-^');
     # legend('expm','expokit','ode23s')
     plt.xlabel('Number of states')
     plt.ylabel('Computational time')
-    for index in range(numArrayDimensions):
-        plt.annotate(
-            '%f sec for n = %d' % (meanTimeExpm[index], arrayDimensions[index]), xy=(index,index))
+    # for index in range(numArrayDimensions):
+    #     plt.annotate(
+    #         '%f sec for n = %d' % (meanTimeExpm[index], arrayDimensions[index]), xy=(index,index))
     plt.legend(loc = 'best')
     plt.savefig('foo.pdf')
     #set(gca,'fontsize',15)
