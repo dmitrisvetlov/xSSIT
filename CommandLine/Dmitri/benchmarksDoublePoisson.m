@@ -1,5 +1,5 @@
 clear all
-%% Random Matrix
+
 M = 5;
 Ns = 6;
 Nsim = 5;
@@ -50,6 +50,10 @@ for n = length(Nar):-1:1
         end % for i1 = 0:N(1) ...
         timeConstruction(j,n) = toc;
 
+        A = sparse(A);
+        C1 = sparse(C1);
+        C2 = sparse(C2);
+
         P0 = zeros(prod(N+1),1); 
         P0(1) = 1;
 
@@ -59,24 +63,9 @@ for n = length(Nar):-1:1
         timeExpm(j,n) = toc;
 
         %% Expokit Calculation
-        m = 15;
-        tryAgain=1;
-        %     fspTol = fspErrorCondition.fspTol;
-        %     nSinks = fspErrorCondition.nSinks;
-        fspErrorCondition.tInit = 0;
+
         tic
-        while tryAgain==1
-            [~, ~, ~, tExport, solutionsNow, ~, tryAgain, te, PfExpokit] = ssit.fsp_ode_solvers.mexpv_modified_2(t, ...
-                A, P0, 1e-8, m,...
-                [], [0,t], 1e-3,[], 0, fspErrorCondition);
-            if tryAgain==0;break;end
-            if m>300
-                warning('Expokit expansion truncated at 300');
-                [~, ~, ~, tExport, solutionsNow, ~, tryAgain, te, PfExpokit] = ssit.fsp_ode_solvers.mexpv_modified_2(tOut(end), jac, initSolution, fspTol/1e5, m,...
-                    [], tOut, fspTol, [length(initSolution)-nSinks+1:length(initSolution)], tStart, fspErrorCondition);
-            end
-            m=m+5;
-        end
+        PfExpokit = ssit.fsp_ode_solvers.expv(t, A, P0);
         timeExpokit(j,n) = toc;
 
         %% ODE Calculation
@@ -98,10 +87,15 @@ figure(2)
 subplot(2,1,1);
 loglog(Nar,mean(timeExpm),'-s',Nar,mean(timeExpokit),...
     '-o',Nar,mean(timeODE23s),'-^',Nar,mean(timeConstruction),'-+');
-legend('expm','expokit','ode23s')
+legend('expm','expokit','ode23s','array-construction')
 xlabel('Number of states')
 ylabel('Computational time')
 set(gca,'fontsize',15)
+
+writematrix(mean(timeExpm), 'timeExpm.m.txt');
+writematrix(mean(timeExpokit), 'timeExpokit.m.txt');
+writematrix(mean(timeODE23s), 'timeODE23s.m.txt');
+writematrix(mean(timeConstruction), 'timeConstruction.m.txt');
 
 % Compare results
 subplot(2,1,2);
