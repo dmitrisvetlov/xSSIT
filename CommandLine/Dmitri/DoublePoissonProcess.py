@@ -183,27 +183,43 @@ for index in range(len(arrayDimensions) - 1, -1, -1):
 # We will now generate figures comparing the running times and results of
 # the various ODE solvers tested.
 
-fig, axs = plt.subplots(3, 1)
-
 # Running times
+
+fig1 = plt.figure(num = 1)
+
+ax = fig1.subplots()
 
 meanTimeExpm = np.mean(timeExpm, axis = COL_AXIS)
 meanTimeExpokit = np.mean(timeExpokit, axis = COL_AXIS)
 meanTimeODE23s = np.mean(timeODE23s, axis = COL_AXIS)
 
-axs[0].loglog(arrayDimensions, meanTimeExpm, label = 'expm')
-axs[0].loglog(arrayDimensions, meanTimeExpokit, label = 'expokit')
-axs[0].loglog(arrayDimensions, meanTimeODE23s, label = 'ode23s')
+ax.plot(arrayDimensions, meanTimeExpm, label = 'expm')
+ax.plot(arrayDimensions, meanTimeExpokit, label = 'expokit')
+ax.plot(arrayDimensions, meanTimeODE23s, label = 'ode23s')
 
-axs[0].set_ylabel('Computational time')
+ax.set_xlabel('Number of states')
+ax.set_ylabel('Computational time')
 
-np.savetxt('meanTimeExpm.txt', meanTimeExpm)
-np.savetxt('meanTimeExpokit.txt', meanTimeExpokit)
-np.savetxt('meanTimeODE23s.txt', meanTimeODE23s)
+plt.xscale('log')
+plt.yscale('log')
 
-np.savetxt('arrayDimensions.txt', arrayDimensions)
+plt.legend(loc = 'best')
+
+plt.show()
+
+np.savetxt('meanTimeExpm.py.txt', meanTimeExpm)
+np.savetxt('meanTimeExpokit.py.txt', meanTimeExpokit)
+np.savetxt('meanTimeODE23s.py.txt', meanTimeODE23s)
+
+np.savetxt('arrayDimensions.py.txt', arrayDimensions)
+
+fig1.savefig('times.png')
 
 # Differences versus analytic result
+
+fig2 = plt.figure(num = 2)
+
+ax = fig2.subplots()
 
 meanErr1Expm = np.mean(err1Expm, axis = COL_AXIS)
 meanErr2Expm = np.mean(err2Expm, axis = COL_AXIS)
@@ -212,40 +228,59 @@ meanErr2Expokit = np.mean(err2Expokit, axis = COL_AXIS)
 meanErr1ODE23s = np.mean(err1ODE23s, axis = COL_AXIS)
 meanErr2ODE23s = np.mean(err2ODE23s, axis = COL_AXIS)
 
-axs[1].loglog(arrayDimensions, meanErr1Expm, label = 'expm-1')
-axs[1].loglog(arrayDimensions, meanErr2Expm, label = 'expm-2')
-axs[1].loglog(arrayDimensions, meanErr1Expokit, label = 'expokit-1')
-axs[1].loglog(arrayDimensions, meanErr2Expokit, label = 'expokit-2')
-axs[1].loglog(arrayDimensions, meanErr1ODE23s, label = 'ode23s-1')
-axs[1].loglog(arrayDimensions, meanErr2ODE23s, label = 'ode23s-2')
+ax.plot(arrayDimensions, meanErr1Expm, label = 'expm-1')
+ax.plot(arrayDimensions, meanErr2Expm, label = 'expm-2')
+ax.plot(arrayDimensions, meanErr1Expokit, label = 'expokit-1')
+ax.plot(arrayDimensions, meanErr2Expokit, label = 'expokit-2')
+ax.plot(arrayDimensions, meanErr1ODE23s, label = 'ode23s-1')
+ax.plot(arrayDimensions, meanErr2ODE23s, label = 'ode23s-2')
 
-axs[1].set_ylabel('Difference versus analytical result')
+ax.set_xlabel('Number of states')
+ax.set_ylabel('Difference versus analytical result')
 
-np.savetxt('meanErr1Expm.txt', meanErr1Expm)
-np.savetxt('meanErr2Expm.txt', meanErr2Expm)
-np.savetxt('meanErr1Expokit.txt', meanErr1Expokit)
-np.savetxt('meanErr2Expokit.txt', meanErr2Expokit)
-np.savetxt('meanErr1ODE23s.txt', meanErr1ODE23s)
-np.savetxt('meanErr2ODE23s.txt', meanErr2ODE23s)
+plt.xscale('log')
+plt.yscale('log')
+
+plt.legend(loc = 'best')
+
+plt.show()
+
+np.savetxt('meanErr1Expm.py.txt', meanErr1Expm)
+np.savetxt('meanErr2Expm.py.txt', meanErr2Expm)
+np.savetxt('meanErr1Expokit.py.txt', meanErr1Expokit)
+np.savetxt('meanErr2Expokit.py.txt', meanErr2Expokit)
+np.savetxt('meanErr1ODE23s.py.txt', meanErr1ODE23s)
+np.savetxt('meanErr2ODE23s.py.txt', meanErr2ODE23s)
+
+fig2.savefig('versus_analytical.png')
 
 # Differences between methods
+
+fig3 = plt.figure(num = 3)
+
+ax = fig3.subplots()
 
 meanDiffExpmExpokit = np.mean(diff_expm_expokit, axis = COL_AXIS)
 meanDiffExpmODE23s = np.mean(diff_expm_ode23s, axis = COL_AXIS)
 meanDiffExpokitODE23s = np.mean(diff_expokit_ode23s, axis = COL_AXIS)
 
-axs[2].loglog(
+ax.plot(
     arrayDimensions, meanDiffExpmExpokit, label = 'diff_expm_expokit')
-axs[2].loglog(arrayDimensions, meanDiffExpmODE23s, label = 'diff_expm_ode23s')
-axs[2].loglog(arrayDimensions, meanDiffExpokitODE23s, label = 'diff_expokit_ode23s')
+ax.plot(arrayDimensions, meanDiffExpmODE23s, label = 'diff_expm_ode23s')
+ax.plot(arrayDimensions, meanDiffExpokitODE23s, label = 'diff_expokit_ode23s')
 
-axs[2].set_xlabel('Number of states')
-axs[2].set_ylabel('Difference of average results')
+ax.set_xlabel('Number of states')
+ax.set_ylabel('Difference of average results')
+
+plt.xscale('log')
+plt.yscale('log')
 
 plt.legend(loc = 'best')
 
-# fig.tight_layout()
 plt.show()
 
-fig.savefig('foo.pdf')
-fig.savefig('foo.png')
+np.savetxt('meanDiffExpmExpokit.py.txt', meanDiffExpmExpokit)
+np.savetxt('meanDiffExpmODE23s.py.txt', meanDiffExpmODE23s)
+np.savetxt('meanDiffExpokitODE23s.py.txt', meanDiffExpokitODE23s)
+
+fig3.savefig('cross-method.png')
