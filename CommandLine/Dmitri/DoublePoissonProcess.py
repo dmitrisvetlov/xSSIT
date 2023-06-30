@@ -11,24 +11,25 @@ import timeit
 from pyexpokit import expmv
 
 numArrayDimensions = 6
-numSimulations = 1
+numSimulations = 5
 arrayDimensions = np.floor(np.logspace(1, 2, numArrayDimensions))
 simDataTemplateArray = np.ones((numSimulations, numArrayDimensions))
 
 timeExpm = np.nan * simDataTemplateArray
 timeExpokit = np.nan * simDataTemplateArray
-timeODE23s = np.nan * simDataTemplateArray
+timeODE23 = np.nan * simDataTemplateArray
+timeArrayConstruction = np.nan * simDataTemplateArray
 
 err1Expm = np.nan * simDataTemplateArray
 err1Expokit = np.nan * simDataTemplateArray
-err1ODE23s = np.nan * simDataTemplateArray
+err1ODE23 = np.nan * simDataTemplateArray
 err2Expm = np.nan * simDataTemplateArray
 err2Expokit = np.nan * simDataTemplateArray
-err2ODE23s = np.nan * simDataTemplateArray
+err2ODE23 = np.nan * simDataTemplateArray
 
 diff_expm_expokit = np.nan * simDataTemplateArray
-diff_expm_ode23s = np.nan * simDataTemplateArray
-diff_expokit_ode23s = np.nan * simDataTemplateArray
+diff_expm_ode23 = np.nan * simDataTemplateArray
+diff_expokit_ode23 = np.nan * simDataTemplateArray
 
 k1 = 10
 k2 = 13
@@ -40,9 +41,7 @@ numPt = 2 # Total number of timepoints
 
 COL_AXIS = 0
 
-for index in range(len(arrayDimensions) - 1, -1, -1):
-    N = int(arrayDimensions[index]);
-
+def construct_arrays(N: int):
     A = np.zeros(((N + 1) ** 2, (N + 1) ** 2))
     C1 = np.zeros((N + 1, (N + 1) ** 2))
     C2 = np.zeros((N + 1, (N + 1) ** 2))
@@ -83,7 +82,17 @@ for index in range(len(arrayDimensions) - 1, -1, -1):
     C1 = csr_array(C1)
     C2 = csr_array(C2)
     
+    return A, C1, C2, P0
+
+for index in range(len(arrayDimensions) - 1, -1, -1):
+    N = int(arrayDimensions[index]);
+
     for simCntr in range(numSimulations):
+        
+        timeArrayConstruction[simCntr][index] = timeit.timeit(
+            stmt = 'construct_arrays(N)', number = 1, globals = globals())
+        
+        A, C1, C2, P0 = construct_arrays(N)
     
         # Solve the ODE via expm_multiply and record the solution and time
         # required in the appropriate matrices. (We refer to the operation as
@@ -156,7 +165,7 @@ for index in range(len(arrayDimensions) - 1, -1, -1):
         method = method, t_eval = t_eval, vectorized = vectorized,
         rtol = rtol, atol = atol, jac = A)"""
         
-        timeODE23s[simCntr][index] = timeit.timeit(
+        timeODE23[simCntr][index] = timeit.timeit(
             stmt = stmt, number = 1, globals = globals())
         
         sol = solve_ivp(fun = rhs, t_span = t_span, y0 = y0, method = method,
@@ -168,14 +177,14 @@ for index in range(len(arrayDimensions) - 1, -1, -1):
         
         P1t = C1 @ yout
         P2t = C2 @ yout
-        err1ODE23s[simCntr][index] = np.sum(np.abs(y1 - P1t[:,-1]))
-        err2ODE23s[simCntr][index] = np.sum(np.abs(y2 - P2t[:,-1]))
+        err1ODE23[simCntr][index] = np.sum(np.abs(y1 - P1t[:,-1]))
+        err2ODE23[simCntr][index] = np.sum(np.abs(y2 - P2t[:,-1]))
     
         diff_expm_expokit[simCntr][index] = np.sum(
             np.abs(PfExpokit - (expAt_P[:][-1])[:,-1]))
-        diff_expm_ode23s[simCntr][index] = np.sum(
+        diff_expm_ode23[simCntr][index] = np.sum(
             np.abs((expAt_P[:][-1])[:,-1] - (yout.T)[-1][:]))
-        diff_expokit_ode23s[simCntr][index] = np.sum(
+        diff_expokit_ode23[simCntr][index] = np.sum(
             np.abs(PfExpokit - ((yout.T)[-1][:])))
     # for simCntr in range(numSimulations) ...
 # for index in range(len(arrayDimensions) - 1, -1, -1) ...
@@ -185,17 +194,32 @@ for index in range(len(arrayDimensions) - 1, -1, -1):
 
 # Running times
 
+meanTimeExpm = np.mean(timeExpm, axis = COL_AXIS)
+meanTimeExpokit = np.mean(timeExpokit, axis = COL_AXIS)
+meanTimeODE23 = np.mean(timeODE23, axis = COL_AXIS)
+meanTimeArrayConstruction = np.mean(timeArrayConstruction, axis = COL_AXIS)
+
+meanTimeExpmMatlab = np.loadtxt('timeExpm.m.txt', delimiter=',')
+meanTimeExpokitMatlab = np.loadtxt('timeExpokit.m.txt', delimiter=',')
+meanTimeODE23Matlab = np.loadtxt('timeODE23.m.txt', delimiter=',')
+meanTimeArrayConstructionMatlab = np.loadtxt(
+    'timeConstruction.m.txt', delimiter=',')
+
+np.savetxt('meanTimeExpm.py.txt', meanTimeExpm)
+np.savetxt('meanTimeExpokit.py.txt', meanTimeExpokit)
+np.savetxt('meanTimeODE23.py.txt', meanTimeODE23)
+np.savetxt('arrayDimensions.py.txt', arrayDimensions)
+
+# Expm
+
 fig1 = plt.figure(num = 1)
 
 ax = fig1.subplots()
 
-meanTimeExpm = np.mean(timeExpm, axis = COL_AXIS)
-meanTimeExpokit = np.mean(timeExpokit, axis = COL_AXIS)
-meanTimeODE23s = np.mean(timeODE23s, axis = COL_AXIS)
-
-ax.plot(arrayDimensions, meanTimeExpm, label = 'expm')
-ax.plot(arrayDimensions, meanTimeExpokit, label = 'expokit')
-ax.plot(arrayDimensions, meanTimeODE23s, label = 'ode23s')
+ax.plot(arrayDimensions, meanTimeExpm, label = 'expm-py')
+ax.plot(arrayDimensions, meanTimeExpmMatlab, label = 'expm-mat')
+ax.plot(arrayDimensions, meanTimeArrayConstruction, label = 'arrays-py')
+ax.plot(arrayDimensions, meanTimeArrayConstructionMatlab, label = 'arrays-mat')
 
 ax.set_xlabel('Number of states')
 ax.set_ylabel('Computational time')
@@ -207,33 +231,73 @@ plt.legend(loc = 'best')
 
 plt.show()
 
-np.savetxt('meanTimeExpm.py.txt', meanTimeExpm)
-np.savetxt('meanTimeExpokit.py.txt', meanTimeExpokit)
-np.savetxt('meanTimeODE23s.py.txt', meanTimeODE23s)
+fig1.savefig('times-expm.png')
 
-np.savetxt('arrayDimensions.py.txt', arrayDimensions)
-
-fig1.savefig('times.png')
-
-# Differences versus analytic result
+# Expokit
 
 fig2 = plt.figure(num = 2)
 
 ax = fig2.subplots()
 
+ax.plot(arrayDimensions, meanTimeExpokit, label = 'expokit-py')
+ax.plot(arrayDimensions, meanTimeExpokitMatlab, label = 'expokit-mat')
+ax.plot(arrayDimensions, meanTimeArrayConstruction, label = 'arrays-py')
+ax.plot(arrayDimensions, meanTimeArrayConstructionMatlab, label = 'arrays-mat')
+
+ax.set_xlabel('Number of states')
+ax.set_ylabel('Computational time')
+
+plt.xscale('log')
+plt.yscale('log')
+
+plt.legend(loc = 'best')
+
+plt.show()
+
+fig2.savefig('times-expokit.png')
+
+# ODE23
+
+fig3 = plt.figure(num = 2)
+
+ax = fig3.subplots()
+
+ax.plot(arrayDimensions, meanTimeODE23, label = 'ode23-py')
+ax.plot(arrayDimensions, meanTimeODE23Matlab, label = 'ode23-mat')
+ax.plot(arrayDimensions, meanTimeArrayConstruction, label = 'arrays-py')
+ax.plot(arrayDimensions, meanTimeArrayConstructionMatlab, label = 'arrays-mat')
+
+ax.set_xlabel('Number of states')
+ax.set_ylabel('Computational time')
+
+plt.xscale('log')
+plt.yscale('log')
+
+plt.legend(loc = 'best')
+
+plt.show()
+
+fig3.savefig('times-ode23.png')
+
+# Differences versus analytic result
+
+fig4 = plt.figure(num = 4)
+
+ax = fig4.subplots()
+
 meanErr1Expm = np.mean(err1Expm, axis = COL_AXIS)
 meanErr2Expm = np.mean(err2Expm, axis = COL_AXIS)
 meanErr1Expokit = np.mean(err1Expokit, axis = COL_AXIS)
 meanErr2Expokit = np.mean(err2Expokit, axis = COL_AXIS)
-meanErr1ODE23s = np.mean(err1ODE23s, axis = COL_AXIS)
-meanErr2ODE23s = np.mean(err2ODE23s, axis = COL_AXIS)
+meanErr1ODE23 = np.mean(err1ODE23, axis = COL_AXIS)
+meanErr2ODE23 = np.mean(err2ODE23, axis = COL_AXIS)
 
 ax.plot(arrayDimensions, meanErr1Expm, label = 'expm-1')
 ax.plot(arrayDimensions, meanErr2Expm, label = 'expm-2')
 ax.plot(arrayDimensions, meanErr1Expokit, label = 'expokit-1')
 ax.plot(arrayDimensions, meanErr2Expokit, label = 'expokit-2')
-ax.plot(arrayDimensions, meanErr1ODE23s, label = 'ode23s-1')
-ax.plot(arrayDimensions, meanErr2ODE23s, label = 'ode23s-2')
+ax.plot(arrayDimensions, meanErr1ODE23, label = 'ode23-1')
+ax.plot(arrayDimensions, meanErr2ODE23, label = 'ode23-2')
 
 ax.set_xlabel('Number of states')
 ax.set_ylabel('Difference versus analytical result')
@@ -249,25 +313,25 @@ np.savetxt('meanErr1Expm.py.txt', meanErr1Expm)
 np.savetxt('meanErr2Expm.py.txt', meanErr2Expm)
 np.savetxt('meanErr1Expokit.py.txt', meanErr1Expokit)
 np.savetxt('meanErr2Expokit.py.txt', meanErr2Expokit)
-np.savetxt('meanErr1ODE23s.py.txt', meanErr1ODE23s)
-np.savetxt('meanErr2ODE23s.py.txt', meanErr2ODE23s)
+np.savetxt('meanErr1ODE23.py.txt', meanErr1ODE23)
+np.savetxt('meanErr2ODE23.py.txt', meanErr2ODE23)
 
-fig2.savefig('versus_analytical.png')
+fig4.savefig('versus_analytical.png')
 
 # Differences between methods
 
-fig3 = plt.figure(num = 3)
+fig5 = plt.figure(num = 5)
 
-ax = fig3.subplots()
+ax = fig5.subplots()
 
 meanDiffExpmExpokit = np.mean(diff_expm_expokit, axis = COL_AXIS)
-meanDiffExpmODE23s = np.mean(diff_expm_ode23s, axis = COL_AXIS)
-meanDiffExpokitODE23s = np.mean(diff_expokit_ode23s, axis = COL_AXIS)
+meanDiffExpmODE23 = np.mean(diff_expm_ode23, axis = COL_AXIS)
+meanDiffExpokitODE23 = np.mean(diff_expokit_ode23, axis = COL_AXIS)
 
 ax.plot(
     arrayDimensions, meanDiffExpmExpokit, label = 'diff_expm_expokit')
-ax.plot(arrayDimensions, meanDiffExpmODE23s, label = 'diff_expm_ode23s')
-ax.plot(arrayDimensions, meanDiffExpokitODE23s, label = 'diff_expokit_ode23s')
+ax.plot(arrayDimensions, meanDiffExpmODE23, label = 'diff_expm_ode23')
+ax.plot(arrayDimensions, meanDiffExpokitODE23, label = 'diff_expokit_ode23')
 
 ax.set_xlabel('Number of states')
 ax.set_ylabel('Difference of average results')
@@ -280,7 +344,7 @@ plt.legend(loc = 'best')
 plt.show()
 
 np.savetxt('meanDiffExpmExpokit.py.txt', meanDiffExpmExpokit)
-np.savetxt('meanDiffExpmODE23s.py.txt', meanDiffExpmODE23s)
-np.savetxt('meanDiffExpokitODE23s.py.txt', meanDiffExpokitODE23s)
+np.savetxt('meanDiffExpmODE23.py.txt', meanDiffExpmODE23)
+np.savetxt('meanDiffExpokitODE23.py.txt', meanDiffExpokitODE23)
 
-fig3.savefig('cross-method.png')
+fig5.savefig('cross-method.png')
