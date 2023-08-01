@@ -41,9 +41,6 @@ g1 = 1
 g2 = 0.5
 
 def k1(t):
-    #k10 = 5
-    #k11 = 2
-    #om1 = 1
     return k10 + k11 * np.sin(om1 * t)
 
 def k2(t):
@@ -228,6 +225,12 @@ for solverCntr in range(numSolvers):
     ax.plot(arrayDimensions, curSolverErr2, label = ('ODEsolver-err2-%s' % curSolverName))
 # for solverCntr in range(numSolvers) ...
 
+err1ODE15sMatlab = np.loadtxt('err1_TV.m.txt', delimiter=',')
+err2ODE15sMatlab = np.loadtxt('err2_TV.m.txt', delimiter=',')
+
+ax.plot(arrayDimensions, err1ODE15sMatlab, label = ('err1-ode15s'))
+ax.plot(arrayDimensions, err2ODE15sMatlab, label = ('err2-ode15s'))
+
 ax.set_xlabel('Number of states')
 ax.set_ylabel('Difference versus analytical result')
 
@@ -239,3 +242,56 @@ plt.legend(loc = 'best')
 plt.show()
 
 fig2.savefig('versus_analytical.png')
+
+# Now, separate the err1 and err2 across different plots to better visualize
+# the discrepancies
+
+fig3 = plt.figure(num = 3)
+
+ax = fig3.subplots()
+
+for solverCntr in range(numSolvers):
+    curSolverName = solversToUse[solverCntr]
+    curSolverErr1 = np.mean(err1ODEsolver[solverCntr], axis = COL_AXIS)
+        
+    ax.plot(arrayDimensions, curSolverErr1, label = ('ODEsolver-err1-%s' % curSolverName))
+# for solverCntr in range(numSolvers) ...
+
+ax.plot(arrayDimensions, err1ODE15sMatlab, label = ('err1-ode15s'))
+
+ax.set_xlabel('Number of states')
+ax.set_ylabel('Difference versus analytical result')
+
+plt.xscale('log')
+plt.yscale('log')
+
+plt.legend(loc = 'best')
+
+plt.show()
+
+fig3.savefig('versus_analytical_err1.png')
+
+fig4 = plt.figure(num = 4)
+
+ax = fig4.subplots()
+
+for solverCntr in range(numSolvers):
+    curSolverName = solversToUse[solverCntr]
+    curSolverErr2 = np.mean(err2ODEsolver[solverCntr], axis = COL_AXIS)
+        
+    ax.plot(arrayDimensions, curSolverErr2, label = ('ODEsolver-err2-%s' % curSolverName))
+# for solverCntr in range(numSolvers) ...
+
+ax.plot(arrayDimensions, err2ODE15sMatlab, label = ('err2-ode15s'))
+
+ax.set_xlabel('Number of states')
+ax.set_ylabel('Difference versus analytical result')
+
+plt.xscale('log')
+plt.yscale('log')
+
+plt.legend(loc = 'best')
+
+plt.show()
+
+fig4.savefig('versus_analytical_err2.png')

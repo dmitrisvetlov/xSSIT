@@ -83,8 +83,3 @@ lam2 = k20/g2*(1-exp(-g2*t)) + ...
 y2 = poisspdf([0:N(2)]',lam2);
 plot([0:N(2)],P2t,[0:N(2)],y2,'r--')
 err2 = sum(abs(y2-P2t))
-
-
-
-
-

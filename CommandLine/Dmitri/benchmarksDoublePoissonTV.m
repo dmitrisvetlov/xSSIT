@@ -1,11 +1,12 @@
 clear all
 
-M = 5;
 Ns = 6;
 Nsim = 5;
 Nar = floor(logspace(1,2,Ns));
 timeConstruction = nan*ones(Nsim,Ns);
 timeode15s=nan*ones(Nsim,Ns);
+err1=nan*ones(Nsim,Ns);
+err2=nan*ones(Nsim,Ns);
 t = 2;
 
 k10 = 5;
@@ -66,14 +67,16 @@ for n = length(Nar):-1:1
         P0(1) = 1;    
 
         A = @(t,x)A0+k1(t)*A1+k2(t)*A2;
-        Apat = A(0,rand(size(P0)))~=0;
+        %Apat = A(0,rand(size(P0)))~=0;
 
         timeConstruction(j,n) = toc;
 
         % ODE Calculation
 
-        ode_opts = odeset('Jacobian', A, 'Vectorized','on','JPattern',Apat,...
+        ode_opts = odeset('Jacobian', A, 'Vectorized','on',...
             'relTol',1e-8, 'absTol', 1e-10,'NonNegative',true);
+        %ode_opts2 = odeset('JPattern',Apat);
+        %ode_opts = odeset(ode_opts, ode_opts2);
         rhs = @(t,x)A(t,x)*x;
         tic
         [tExport, yout] = ode15s(rhs, [0,t/2,t], P0, ode_opts);
@@ -83,6 +86,18 @@ for n = length(Nar):-1:1
         
         P1t = C1*Pt;
         P2t = C2*Pt;
+
+        %% Check results
+
+        lam1 = k10/g1*(1-exp(-g1*t)) + ...
+            (k11*om1*exp(-g1*t))/(g1^2 + om1^2) - (k11*(om1*cos(om1*t) - g1*sin(om1*t)))/(g1^2 + om1^2);
+        y1 = poisspdf([0:N(1)]',lam1);
+        err1(j,n) = sum(abs(y1-P1t));
+        
+        lam2 = k20/g2*(1-exp(-g2*t)) + ...
+            (k21*om2*exp(-g2*t))/(g2^2 + om2^2) - (k21*(om2*cos(om2*t) - g2*sin(om2*t)))/(g2^2 + om2^2);
+        y2 = poisspdf([0:N(2)]',lam2);
+        err2(j,n) = sum(abs(y2-P2t));
     end % for j = 1:Nsim ...
 end % for n = length(Nar):-1:1 ...
 
@@ -97,3 +112,9 @@ set(gca,'fontsize',15)
 
 writematrix(mean(timeode15s), 'timeode15s_TV.m.txt');
 writematrix(mean(timeConstruction), 'timeConstruction_TV.m.txt');
+
+figure(2)
+loglog(Nar,mean(err1),'-^',Nar,mean(err2),'-+');
+
+writematrix(mean(err1), 'err1_TV.m.txt');
+writematrix(mean(err2), 'err2_TV.m.txt');
