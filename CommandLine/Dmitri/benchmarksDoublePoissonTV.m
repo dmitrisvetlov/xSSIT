@@ -2,7 +2,7 @@ clear all
 
 Ns = 6;
 Nsim = 5;
-Nar = floor(logspace(1,2,Ns));
+Nar = floor(logspace(1,2,Ns)); % 1,2
 timeConstruction = nan*ones(Nsim,Ns);
 timeode15s=nan*ones(Nsim,Ns);
 err1=nan*ones(Nsim,Ns);
@@ -12,17 +12,17 @@ t = 2;
 k10 = 5;
 k11 = 2;
 om1 = 1;
-k20 = 7;
-k21 = 3;
-om2 = 1;
+k20 = 5; %7
+k21 = 2; %3
+om2 = 1; %1
 
 k1 = @(t)k10+k11*sin(om1*t);
 k2 = @(t)k20+k21*sin(om2*t);
 
 g1 = 1;
-g2 = 0.5;
+g2 = 1; %0.5
 
-for n = length(Nar):-1:1
+for n = 1:length(Nar) % length(Nar):-1:1
     N = [Nar(n), Nar(n)];  % Projection size
         
     for j = 1:Nsim

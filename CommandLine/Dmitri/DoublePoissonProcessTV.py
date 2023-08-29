@@ -17,8 +17,8 @@ numSolvers = len(solversToUse)
 
 numArrayDimensions = 6
 numSimulations = 5
-arrayDimensions = np.floor(np.logspace(1, 2, numArrayDimensions))
-
+arrayDimensions = np.floor(np.logspace(1, 2, numArrayDimensions)) # 1, 2
+ 
 # We will only construct the input arrays once for all solvers:
 simConstrTemplateArray = np.ones((numSimulations, numArrayDimensions))
 simDataTemplateArray = np.ones(
@@ -33,12 +33,12 @@ err2ODEsolver = np.nan * simDataTemplateArray
 k10 = 5
 k11 = 2
 om1 = 1
-k20 = 7
-k21 = 3
+k20 = 5
+k21 = 2
 om2 = 1
 
 g1 = 1
-g2 = 0.5
+g2 = 1
 
 def k1(t):
     return k10 + k11 * np.sin(om1 * t)
@@ -58,8 +58,9 @@ def construct_arrays(N: int):
     C1 = np.zeros((N + 1, (N + 1) ** 2))
     C2 = np.zeros((N + 1, (N + 1) ** 2))
 
-    for i1 in range(N):
-        for i2 in range(N):
+    # Evaluate all (i1, i2) pairs from (0, 0) through (N, N)
+    for i1 in range(N + 1):
+        for i2 in range(N + 1):
             k = i1 * (N + 1) + i2 # Do not add 1; zero-based indexing
             
             if i1 > 0:
@@ -80,8 +81,8 @@ def construct_arrays(N: int):
             
             C1[i1][k] = 1 # Do not add 1; zero-based indexing
             C2[i2][k] = 1 # Do not add 1; zero-based indexing
-        # for i2 in range(N) ...
-    # for i1 in range(N) ...
+        # for i2 in range(N + 1) ...
+    # for i1 in range(N + 1) ...
 
     P0 = np.zeros(((N + 1) ** 2, 1))
     P0[1] = 1
@@ -96,9 +97,13 @@ def construct_arrays(N: int):
     C1 = csr_array(C1)
     C2 = csr_array(C2)
     
+    # A0dense = A0.todense()
+    # A1dense = A1.todense()
+    # A2dense = A2.toarray()
+    
     return A0, A1, A2, C1, C2, P0
 
-for index in range(len(arrayDimensions) - 1, -1, -1):
+for index in range(0, len(arrayDimensions), 1): # range(len(arrayDimensions) - 1, -1, -1):
     N = int(arrayDimensions[index]);
 
     for simCntr in range(numSimulations):
