@@ -95,6 +95,10 @@ classdef SSIT
         function constraints = get.fspConstraints(obj)
             % Makes a list of FSP constraints that can be used by the FSP
             % solver.
+            % F_i(species1, species2, ..., speciesN) (F_i [arbitrary symbolic expression] < b_i
+            % [float]; b_i must be positive; default is 1
+            % Returns a list of constraint functions and their
+            % corresponding constraints (ceilings)
             nSpecies = length(obj.species);
             Data = cell(nSpecies*2,3);
             for i = 1:nSpecies

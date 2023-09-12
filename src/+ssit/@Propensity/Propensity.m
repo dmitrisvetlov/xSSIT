@@ -1,3 +1,8 @@
+% Propensity function in general:
+% w(x1,x2,...,xn,t,lambda1,lambda2,...,lambdaP{,logical1(t1),logical2(x),...})
+% {is new version}
+% w(xbar,t,lambdabar) = w_x(xbar,{logical expressions of x}) * w_t(t,lambdabar) [separate if possible]
+
 classdef Propensity
     % Object for storing the propensity function of a reaction
     % in stochastic chemical reaction network model input from SSIT.
@@ -44,10 +49,13 @@ classdef Propensity
         isFactorizable; % (true/false) if time-dep, is it isFactorizable?
         stoichVector; % (column vec) the associated stoichiometry vector
         timeDependentFactor; % function handle to compute the time-dependent factor,
-        % left empty if it is either independent of time or not isFactorizable
-        stateDependentFactor; % function handle to compute the state-dependent factor.
+        % left empty if it is either independent of time or not
+        % isFactorizable [w_t(t,lambdabar)]
+        stateDependentFactor; % function handle to compute the state-dependent factor. [w_x(xbar)]
         jointDependentFactor; % function handle to compute the time-and-state-dependent factor, this
-        % is only used if the propensity is not isFactorizable.
+        % is only used if the propensity is not isFactorizable. [w(xbar,t,lambdabar)]
+        % Hybrid model shifts the non-stochastic x values from w_x to w_t
+        % (if there are any)
         originalString;
     end
 
