@@ -22,6 +22,9 @@ k2 = @(t)k20+k21*sin(om2*t);
 g1 = 1;
 g2 = 1; %0.5
 
+figure(1)
+hold on
+
 for n = 1:length(Nar) % length(Nar):-1:1
     N = [Nar(n), Nar(n)];  % Projection size
         
@@ -98,12 +101,19 @@ for n = 1:length(Nar) % length(Nar):-1:1
             (k21*om2*exp(-g2*t))/(g2^2 + om2^2) - (k21*(om2*cos(om2*t) - g2*sin(om2*t)))/(g2^2 + om2^2);
         y2 = poisspdf([0:N(2)]',lam2);
         err2(j,n) = sum(abs(y2-P2t));
+
+        if j==1
+            plot([0:N(1)]',y1,'r--')
+            plot([0:N(2)]',y2,'b--')
+        end
     end % for j = 1:Nsim ...
 end % for n = length(Nar):-1:1 ...
 
+hold off
+
 %% Comparisons
 % Compare time
-figure(1)
+figure(2)
 loglog(Nar,mean(timeode15s),'-^',Nar,mean(timeConstruction),'-+');
 legend('ode15s','array-construction')
 xlabel('Number of states')
@@ -113,7 +123,7 @@ set(gca,'fontsize',15)
 writematrix(mean(timeode15s), 'timeode15s_TV.m.txt');
 writematrix(mean(timeConstruction), 'timeConstruction_TV.m.txt');
 
-figure(2)
+figure(3)
 loglog(Nar,mean(err1),'-^',Nar,mean(err2),'-+');
 
 writematrix(mean(err1), 'err1_TV.m.txt');

@@ -17,7 +17,7 @@ numSolvers = len(solversToUse)
 
 numArrayDimensions = 6
 numSimulations = 5
-arrayDimensions = np.floor(np.logspace(1, 2, numArrayDimensions)) # 1, 2
+arrayDimensions = np.floor(np.logspace(0, 1, numArrayDimensions)) # 1, 2
  
 # We will only construct the input arrays once for all solvers:
 simConstrTemplateArray = np.ones((numSimulations, numArrayDimensions))
@@ -103,6 +103,10 @@ def construct_arrays(N: int):
     
     return A0, A1, A2, C1, C2, P0
 
+fig0 = plt.figure(num = 0)
+
+ax = fig0.subplots()
+
 for index in range(0, len(arrayDimensions), 1): # range(len(arrayDimensions) - 1, -1, -1):
     N = int(arrayDimensions[index]);
 
@@ -163,6 +167,10 @@ for index in range(0, len(arrayDimensions), 1): # range(len(arrayDimensions) - 1
                     (k21 * (om2 * np.cos(om2 * numPt) -
                             g2 * np.sin(om2 * numPt))) / (g2 ** 2 + om2 ** 2))
             y2 = poisson.pmf(nrange, lam2)
+            
+            if (simCntr == 0) and (solverCntr == 0):
+                ax.plot(nrange, y1, label = 'y1-%d-%d' % (nrange.min(), nrange.max()))
+                ax.plot(nrange, y2, label = 'y2-%d-%d' % (nrange.min(), nrange.max()))
             
             err1ODEsolver[solverCntr][simCntr][index] = np.sum(np.abs(y1 - P1t[:,-1]))
             err2ODEsolver[solverCntr][simCntr][index] = np.sum(np.abs(y2 - P2t[:,-1]))

@@ -4,16 +4,16 @@ clear all
 k10 = 5;
 k11 = 2;
 om1 = 1;
-k20 = 7;
-k21 = 3;
-om2 = 1;
+k20 = 5; % 7
+k21 = 2; % 3
+om2 = 1; % 1
 
 k1 = @(t)k10+k11*sin(om1*t);
 k2 = @(t)k20+k21*sin(om2*t);
 g1 = 1;
-g2 = 0.5;
+g2 = 1; % 0.5;
 
-N = [50,80];  % Projection size
+N = [10,10] % N = [50,80];  % Projection size
 A0 = zeros(prod(N+1),prod(N+1));
 A1 = zeros(prod(N+1),prod(N+1));
 A2 = zeros(prod(N+1),prod(N+1));
@@ -47,11 +47,17 @@ end
 P0 = zeros(prod(N+1),1); 
 P0(1) = 1;
 
-t = 2.4;
+t= 2.0; %t = 2.4;
+
+% Export dense arrays
+
+save("matlab_construct_arrays_dense_0","A0","A1","A2","C1","C2")
 
 A0 = sparse(A0);
 A1 = sparse(A1);
 A2 = sparse(A2);
+
+save("matlab_construct_arrays_sparse_0","A0","A1","A2","C1","C2")
 
 A = @(t,x)A0+k1(t)*A1+k2(t)*A2;
 
